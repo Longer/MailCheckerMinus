@@ -1,5 +1,5 @@
 /// <reference path="chrome-api-vsdoc.js" />
-/// <reference path="jquery-1.4.2.js" />
+/// <reference path="jquery.js" />
 /// <reference path="encoder.js" />
 
 /* 
@@ -184,7 +184,7 @@ function MailAccount(settingsObj) {
          timeout: 25000,
          success: function (data) {
             try {
-               var startIndex = data.lastIndexOf('var GLOBALS=') + 12;
+               /*var startIndex = data.lastIndexOf('var GLOBALS=') + 12;
                var endIndex = data.lastIndexOf(';GLOBALS[0]');
                var length = endIndex - startIndex;
 
@@ -193,6 +193,31 @@ function MailAccount(settingsObj) {
                // Parse labels from GLOBALS
                LABELS = new Array();
                $.each(GLOBALS[17][1][2], function (i, val) { LABELS.push(val[0]); });
+			   */
+				var startIndex = data.indexOf('["ua",') + 6;
+					   var endIndex = data.indexOf(']\n]', startIndex) + 3;
+					   var length = endIndex - startIndex;
+					   var labelsRawStr = data.substr(startIndex, length);
+					   var labelsRawObj = JSON.parse(labelsRawStr);
+					   
+					   labels = [];
+					   var foundValidLabel = false;
+					   
+					   // start backwards and ignore all "internal google" labels starting with ^, but if we find a label starting with ^ after a valid one then include it it could be good 
+					   for (var a=labelsRawObj.length-1; a>=0; a--) {
+						   var labelName = labelsRawObj[a][0];
+						   if (!foundValidLabel && labelName.indexOf("^") == 0) {
+							   continue;
+						   } else {
+							   foundValidLabel = true;
+						   }
+						   
+						   if (foundValidLabel) {
+							   labels.push(labelName);
+						   }						   
+					   }
+					   
+					   labels.sort();
             } catch (e) {
                console.error("An error occured while parsing GLOBALS: " + e);
             }

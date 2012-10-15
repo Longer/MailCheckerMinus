@@ -1,4 +1,4 @@
-/// <reference path="jquery-1.4.2.js" />
+/// <reference path="jquery.js" />
 /// <reference path="chrome-api-vsdoc.js" />
 /// <reference path="encoder.js" />
 /// <reference path="settings.js" />
@@ -395,17 +395,20 @@ function replyTextKeyPress(event, mailid) {
    }
 }
 
-function refreshMail() {   
-   $.each(mailAccounts, function (i, account) {
-      account.refreshInbox(function () {
-         renderAccount(account);         
-      });
-   });
-}
-
-function openOptions() {
-   chrome.tabs.create({ url: "options.html" });
-}
+$(document).ready(function (){
+	$("#refresh").click(function () {   
+		console.log(1);
+	   $.each(mailAccounts, function (i, account) {
+	      account.refreshInbox(function () {
+	         renderAccount(account);         
+	      });
+	   });
+	});
+	
+	$("#options").click(function() {
+	   chrome.tabs.create({ url: "options.html" });
+	});
+});
 
 function resizeWindow() {
    var isExpanded = $('html').width() != 500;

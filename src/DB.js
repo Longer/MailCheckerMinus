@@ -58,7 +58,7 @@ wrappedDB.putObject = function(storeId, key, value) {
       return;
 
    var db = wrappedDB.db;
-   var trans = db.transaction([storeId], IDBTransaction.READ_WRITE);
+   var trans = db.transaction([storeId], "readwrite");
    
    trans.onabort = function(e) {
       console.error(e);
@@ -108,7 +108,7 @@ wrappedDB.readAllObjects = function(storeId, objectFoundCallback, requestComplet
       return;
 
    var db = wrappedDB.db;
-   var trans = db.transaction([storeId], IDBTransaction.READ_WRITE);
+   var trans = db.transaction([storeId], "readonly");
    var store = trans.objectStore(storeId);
  
    // Get everything in the store;

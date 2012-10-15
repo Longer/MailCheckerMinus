@@ -1,5 +1,5 @@
 /// <reference path="chrome-api-vsdoc.js" />
-/// <reference path="jquery-1.4.2.js" />
+/// <reference path="jquery.js" />
 /// <reference path="mailaccount.class.js" />
 /// <reference path="utility.js" />
 /// <reference path="settings.js" />
@@ -20,54 +20,136 @@ var boolIdArray = new Array("hide_count",
                             "show_notification");
 var accounts;
 
-function save_options() {
-   for (var i in boolIdArray) {
-      var id = boolIdArray[i];
-      var element = document.getElementById(id);
-      var value = element.checked;
-      Settings.store(id, value);
+$(document).ready(function (){
+	$(".menu_item").each(function (){
+		$(this).click(function (){
+			showContent($(this).attr('content_id'));
+		});
+	});
 
-      console.log("saved: " + id + " as " + value);
-   }
 
-   var iconRadios = document.forms[0].icon_set;
-   for (var i in iconRadios) {
-      if (iconRadios[i].checked) {
-         Settings.store("icon_set", iconRadios[i].value);
-         break;
-      }
-   }
-
-   var previewRadios = document.forms[0].preview_setting;
-   for (var i in previewRadios) {
-      if (previewRadios[i].checked) {
-         Settings.store("preview_setting", Number(previewRadios[i].value));
-         break;
-      }
-   }
-
-   Settings.store("poll", parseInt(document.getElementById("poll").value));
-   Settings.store("dn_timeout", parseInt(document.getElementById("dn_timeout").value));
-   Settings.store("language", document.getElementById("languages").value);
-   Settings.store("check_label", document.getElementById("check_label").value);
-   Settings.store("open_label", document.getElementById("open_label").value);
-
-   Settings.store("accounts", accounts);
-
-   Settings.store("sn_audio", document.getElementById("sn_audio").value);
-   if (Settings.read("sn_audio") == "custom") {
+	$("#sn_audio_src").change(function (){
+	   var file = this.files[0];
+	   var fileReader = new FileReader();
+	
+	   fileReader.onloadend = function () {
+		   try {
+			   localStorage["temp"] = this.result;
+		   } catch(e) {
+			   alert("The file you have chosen is too large, please select a shorter sound alert.");
+			   return;
+		   } finally {		   
+			   localStorage["temp"] = null;
+			   delete localStorage["temp"];
+		   }		
+		   
+	      $('#sn_audio_enc').val(this.result);
+		   
+		   
+		  $('#submit').val('Save &amp; Reload');
+		  $('#submit').removeAttr('disabled');
+	   }
+	
+	   fileReader.onabort = fileReader.onerror = function () {
+	      switch (this.error.code) {
+	         case FileError.NOT_FOUND_ERR:
+	            alert("File not found!");
+	            break;
+	         case FileError.SECURITY_ERR:
+	            alert("Security error!");
+	            break;
+	         case FileError.NOT_READABLE_ERR:
+	            alert("File not readable!");
+	            break;
+	         case FileError.ENCODING_ERR:
+	            alert("Encoding error in file!");
+	            break;
+	         default:
+	            alert("An error occured while reading the file!");
+	            break;
+	      }
+		  
+		  $('#submit').val('Save &amp; Reload');
+		  $('#submit').removeAttr('disabled');
+	   }
+	
+	   $('#submit').val('Processing...');
+	   $('#submit').attr('disabled', 'disabled');
+	   
+	   fileReader.readAsDataURL(file);
+	});
+	
+	$("#playNotificationSound").click(function () {
+	   var source;
+	
+	   if (document.getElementById("sn_audio").value == "custom") {
+	      if (document.getElementById("sn_audio_enc").value) {
+	         source = document.getElementById("sn_audio_enc").value;
+	      } else {
+	         source = Settings.read("sn_audio_raw");
+	      }
+	   } else {
+	      source = document.getElementById("sn_audio").value;
+	   }
+	
 	   try {
-	      Settings.store("sn_audio_raw", document.getElementById("sn_audio_enc").value);
+	      var audioElement = new Audio();
+	      audioElement.src = source;
+	      audioElement.play();
 	   } catch (e) {
 	      console.error(e);
-		   alert("Could not save notification sound in storage. Please select a smaller audio file!");   
 	   }
-   } else {
-      Settings.store("sn_audio_raw", null);
-   }
+	});
 
-   backgroundPage.reloadSettings();
-}
+	$("#submit").click(function (){
+	   for (var i in boolIdArray) {
+	      var id = boolIdArray[i];
+	      var element = document.getElementById(id);
+	      var value = element.checked;
+	      Settings.store(id, value);
+	
+	      console.log("saved: " + id + " as " + value);
+	   }
+	
+	   var iconRadios = document.forms[0].icon_set;
+	   for (var i in iconRadios) {
+	      if (iconRadios[i].checked) {
+	         Settings.store("icon_set", iconRadios[i].value);
+	         break;
+	      }
+	   }
+	
+	   var previewRadios = document.forms[0].preview_setting;
+	   for (var i in previewRadios) {
+	      if (previewRadios[i].checked) {
+	         Settings.store("preview_setting", Number(previewRadios[i].value));
+	         break;
+	      }
+	   }
+	
+	   Settings.store("poll", parseInt(document.getElementById("poll").value));
+	   Settings.store("dn_timeout", parseInt(document.getElementById("dn_timeout").value));
+	   Settings.store("language", document.getElementById("languages").value);
+	   Settings.store("check_label", document.getElementById("check_label").value);
+	   Settings.store("open_label", document.getElementById("open_label").value);
+	
+	   Settings.store("accounts", accounts);
+	
+	   Settings.store("sn_audio", document.getElementById("sn_audio").value);
+	   if (Settings.read("sn_audio") == "custom") {
+		   try {
+		      Settings.store("sn_audio_raw", document.getElementById("sn_audio_enc").value);
+		   } catch (e) {
+		      console.error(e);
+			   alert("Could not save notification sound in storage. Please select a smaller audio file!");   
+		   }
+	   } else {
+	      Settings.store("sn_audio_raw", null);
+	   }
+	
+	   backgroundPage.reloadSettings();
+	});
+});
 
 // Restores input states to saved values from stored settings.
 function restore_options() {
@@ -285,75 +367,3 @@ function toggleCheckBox(checkboxId, checked) {
    }
 }
 
-function handleAudioFile(fileList) {
-   var file = fileList[0];
-   var fileReader = new FileReader();
-
-   fileReader.onloadend = function () {
-	   try {
-		   localStorage["temp"] = this.result;
-	   } catch(e) {
-		   alert("The file you have chosen is too large, please select a shorter sound alert.");
-		   return;
-	   } finally {		   
-		   localStorage["temp"] = null;
-		   delete localStorage["temp"];
-	   }		
-	   
-      $('#sn_audio_enc').val(this.result);
-	   
-	   
-	  $('#submit').val('Save &amp; Reload');
-	  $('#submit').removeAttr('disabled');
-   }
-
-   fileReader.onabort = fileReader.onerror = function () {
-      switch (this.error.code) {
-         case FileError.NOT_FOUND_ERR:
-            alert("File not found!");
-            break;
-         case FileError.SECURITY_ERR:
-            alert("Security error!");
-            break;
-         case FileError.NOT_READABLE_ERR:
-            alert("File not readable!");
-            break;
-         case FileError.ENCODING_ERR:
-            alert("Encoding error in file!");
-            break;
-         default:
-            alert("An error occured while reading the file!");
-            break;
-      }
-	  
-	  $('#submit').val('Save &amp; Reload');
-	  $('#submit').removeAttr('disabled');
-   }
-
-   $('#submit').val('Processing...');
-   $('#submit').attr('disabled', 'disabled');
-   
-   fileReader.readAsDataURL(file);
-}
-
-function playNotificationSound() {
-   var source;
-
-   if (document.getElementById("sn_audio").value == "custom") {
-      if (document.getElementById("sn_audio_enc").value) {
-         source = document.getElementById("sn_audio_enc").value;
-      } else {
-         source = Settings.read("sn_audio_raw");
-      }
-   } else {
-      source = document.getElementById("sn_audio").value;
-   }
-
-   try {
-      var audioElement = new Audio();
-      audioElement.src = source;
-      audioElement.play();
-   } catch (e) {
-      console.error(e);
-   }
-}
